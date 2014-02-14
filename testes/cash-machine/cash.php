@@ -2,37 +2,44 @@
 class NoteUnavailableException extends Exception
 {}
 
-
-function getMoney($value)
-{	
-	if ($value !== NULL && (! is_int($value) || $value < 0))
+class CashMachine 
+{
+	protected $availableNotes;
+	
+	public function __construct($availableNotes = array(100, 50, 20, 10)) 
 	{
-		throw new InvalidArgumentException();
+		arsort($availableNotes);
+		$this->availableNotes = $availableNotes;
 	}
 	
-	$noteTypes = array(100, 50, 20, 10);
-	arsort($noteTypes);
-	
-	$notes = array();
-	
-	foreach ($noteTypes as $noteType)
+	public function withdraw($value)
 	{	
-		while ($value >= $noteType)
+		if ($value !== NULL && (! is_int($value) || $value < 0))
 		{
-			if ($value >= $noteType) {
-				$notes[] = $noteType;
-				$value -= $noteType;
-			} // else continue
+			throw new InvalidArgumentException();
 		}
-	}
 
-	if ($value > 0)
-	{
-		throw new NoteUnavailableException();
+		$notes = array();
+
+		foreach ($this->availableNotes as $note)
+		{	
+			while ($value >= $note)
+			{
+				if ($value >= $note) {
+					$notes[] = $note;
+					$value -= $note;
+				} // else continue
+			}
+		}
+
+		if ($value > 0)
+		{
+			throw new NoteUnavailableException();
+		}
+
+		return $notes;
 	}
-	
-	return $notes;
-}
+} 
 
 function assertEqual($expected, $value)
 {
@@ -42,28 +49,30 @@ function assertEqual($expected, $value)
 	}
 }
 
-assertEqual([20, 10], getMoney(30));
-assertEqual([50, 20, 10], getMoney(80));
-assertEqual([100, 100, 20, 20], getMoney(240));
-assertEqual(array(), getMoney(NULL));
+$machine = new CashMachine();
+
+assertEqual([20, 10], $machine->withdraw(30));
+assertEqual([50, 20, 10], $machine->withdraw(80));
+assertEqual([100, 100, 20, 20], $machine->withdraw(240));
+assertEqual(array(), $machine->withdraw(NULL));
 
 try 
 {
-	getMoney(125);
+	$machine->withdraw(45);
 } 
 catch (NoteUnavailableException $e) 
 {}
 	
 try 
 {
-	getMoney(-250);
+	$machine->withdraw(-250);
 } 
-catch (InvalidArgumentException $e) 
+catch (InvalidArgumentException $e)
 {}
 	
 try 
 {
-	getMoney("toto");
+	$machine->withdraw('toto');
 } 
 catch (InvalidArgumentException $e) 
 {}
